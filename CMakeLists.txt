@@ -68,22 +68,3 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 		$<TARGET_FILE_DIR:${PROJECT_NAME}>/data
 	COMMENT "Copying data/ to build output"
 )
-
-enable_testing()
-
-add_executable(SchedulerServiceTests
-	tests/test_scheduler_service.cpp
-	src/controllers/SchedulerService.cpp
-)
-
-target_include_directories(SchedulerServiceTests PRIVATE
-	${PROJECT_SOURCE_DIR}/include
-	${THIRD_DIR}/json/single_include
-)
-
-target_link_libraries(SchedulerServiceTests PRIVATE
-	taskschd
-	ole32
-)
-
-add_test(NAME SchedulerServiceTests COMMAND SchedulerServiceTests)

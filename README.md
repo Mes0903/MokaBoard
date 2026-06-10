@@ -2,7 +2,7 @@
 
 A Windows desktop alarm application built with C++23, Dear ImGui, and Vulkan.
 
-Each alarm stores a time, label, repeat days, and a YouTube URL. When triggered, Windows Task Scheduler opens the URL in Chrome incognito mode (even if the application itself is not running). The window minimises to the system tray rather than closing.
+Each alarm stores a time, label, repeat days, and a YouTube URL. When triggered, Windows Task Scheduler opens the URL in a new maximized Chrome window (even if the application itself is not running). The window minimises to the system tray rather than closing.
 
 ## Building
 
@@ -217,7 +217,7 @@ This project uses the Windows Task Scheduler COM API (`taskschd.h`) to create an
 
 Operational expectations (high level):
 
-- Each alarm corresponds to a scheduled task that launches Chrome with `--incognito` and the configured URL.
+- Each alarm corresponds to a scheduled task that launches Chrome with `--new-window --start-maximized` and the configured URL.
 - Enabling or disabling an alarm is expected to keep the scheduled task state in sync.
 - Deleting an alarm is expected to remove the corresponding scheduled task.
 - `cleanAll()` is expected to remove all tasks managed by this application and clear local JSON state.

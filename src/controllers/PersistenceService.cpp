@@ -1,5 +1,4 @@
 #include "controllers/PersistenceService.h"
-
 #include <fstream>
 
 namespace alarm::controller {

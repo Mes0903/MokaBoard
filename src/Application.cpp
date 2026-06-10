@@ -71,17 +71,17 @@ void Application::initWindow_()
 
 	const auto &savedSize = ctrl_->settings();
 	hwnd_									= ::CreateWindowExW(0,
-														WND_CLASS,
-														APP_NAME,
-														WS_OVERLAPPEDWINDOW,
-														CW_USEDEFAULT,
-														CW_USEDEFAULT,
-														savedSize.window_width,
-														savedSize.window_height,
-														nullptr,
-														nullptr,
-														wc_.hInstance,
-														nullptr);
+																						WND_CLASS,
+																						APP_NAME,
+																						WS_OVERLAPPEDWINDOW,
+																						CW_USEDEFAULT,
+																						CW_USEDEFAULT,
+																						savedSize.window_width,
+																						savedSize.window_height,
+																						nullptr,
+																						nullptr,
+																						wc_.hInstance,
+																						nullptr);
 
 	::ShowWindow(hwnd_, SW_SHOWDEFAULT);
 	::UpdateWindow(hwnd_);

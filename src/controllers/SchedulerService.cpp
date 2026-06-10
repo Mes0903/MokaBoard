@@ -1,11 +1,10 @@
 #include "controllers/SchedulerService.h"
 #include <combaseapi.h>
-#include <format>
+#include <cctype>
 #include <taskschd.h>
 #include <windows.h>
 #include <wrl/client.h>
-#include <iostream>
-#include <string_view>
+#include <vector>
 
 #pragma comment(lib, "taskschd.lib")
 #pragma comment(lib, "ole32.lib")
@@ -124,41 +123,64 @@ std::string quoteCommandLineArgument(const std::string &arg)
 	quoted.reserve(arg.size() + 2);
 	quoted.push_back('"');
 
+	size_t backslashes = 0;
 	for (char c : arg) {
-		if (c == '"' || c == '\\')
-			quoted.push_back('\\');
-		quoted.push_back(c);
+		if (c == '\\') {
+			++backslashes;
+		}
+		else if (c == '"') {
+			quoted.append(backslashes * 2 + 1, '\\');
+			quoted.push_back(c);
+			backslashes = 0;
+		}
+		else {
+			quoted.append(backslashes, '\\');
+			backslashes = 0;
+			quoted.push_back(c);
+		}
 	}
 
+	quoted.append(backslashes * 2, '\\');
 	quoted.push_back('"');
 	return quoted;
 }
 
-std::string unquoteCommandLineArgument(std::string_view arg)
+std::vector<std::string> splitCommandLineArguments(std::string_view args)
 {
-	const std::string trimmed = trim(arg);
-	if (trimmed.size() < 2 || trimmed.front() != '"' || trimmed.back() != '"')
-		return trimmed;
+	std::vector<std::string> tokens;
+	size_t i = 0;
 
-	std::string unquoted;
-	unquoted.reserve(trimmed.size() - 2);
-	bool escaped = false;
-	for (char c : std::string_view(trimmed).substr(1, trimmed.size() - 2)) {
-		if (escaped) {
-			unquoted.push_back(c);
-			escaped = false;
+	while (i < args.size()) {
+		while (i < args.size() && std::isspace(static_cast<unsigned char>(args[i])))
+			++i;
+		if (i >= args.size())
+			break;
+
+		std::string token;
+		bool inQuotes = false;
+		while (i < args.size()) {
+			const char c = args[i];
+			if (c == '"') {
+				inQuotes = !inQuotes;
+				++i;
+			}
+			else if (!inQuotes && std::isspace(static_cast<unsigned char>(c))) {
+				break;
+			}
+			else if (c == '\\' && i + 1 < args.size() && args[i + 1] == '"') {
+				token.push_back('"');
+				i += 2;
+			}
+			else {
+				token.push_back(c);
+				++i;
+			}
 		}
-		else if (c == '\\') {
-			escaped = true;
-		}
-		else {
-			unquoted.push_back(c);
-		}
+
+		tokens.push_back(std::move(token));
 	}
-	if (escaped)
-		unquoted.push_back('\\');
 
-	return unquoted;
+	return tokens;
 }
 
 // Builds the task display name: "<label> <id>", or "unnamed <id>" when label is empty.
@@ -190,18 +212,29 @@ namespace alarm::controller {
 
 std::string SchedulerService::buildChromeLaunchArguments(const std::string &youtubeUrl)
 {
-	return "--incognito " + quoteCommandLineArgument(youtubeUrl);
+	return youtubeUrl;
 }
 
 std::string SchedulerService::extractYoutubeUrlFromChromeArguments(const std::string &arguments)
 {
 	constexpr std::string_view incognitoFlag = "--incognito";
+	constexpr std::string_view newWindowFlag = "--new-window";
+	constexpr std::string_view startMaximizedFlag = "--start-maximized";
 
 	const std::string trimmed = trim(arguments);
-	if (!trimmed.starts_with(incognitoFlag))
+	const std::vector<std::string> tokens = splitCommandLineArguments(trimmed);
+	if (tokens.empty())
+		return {};
+
+	if (tokens.size() >= 3 &&
+			std::filesystem::path(tokens[0]).filename().string() == "launch_chrome_incognito.vbs")
+		return tokens[2];
+
+	if (!tokens.empty() && tokens[0] != incognitoFlag && tokens[0] != newWindowFlag)
 		return trimmed;
 
-	return unquoteCommandLineArgument(trimmed.substr(incognitoFlag.size()));
+	const size_t urlIndex = (tokens.size() >= 3 && tokens[1] == startMaximizedFlag) ? 2 : 1;
+	return tokens.size() > urlIndex ? tokens[urlIndex] : std::string{};
 }
 
 // ─── syncAlarm ────────────────────────────────────────────────────────────────
@@ -285,8 +318,9 @@ std::expected<void, std::string> SchedulerService::syncAlarm(const model::AlarmM
 	if (FAILED(hr))
 		return std::unexpected(hrErr("QueryInterface(IExecAction)", hr));
 
+	const std::string launchArguments = buildChromeLaunchArguments(alarm.youtube_url);
 	exec->put_Path(BStr(toWide(chromePath).c_str()));
-	exec->put_Arguments(BStr(toWide(buildChromeLaunchArguments(alarm.youtube_url)).c_str()));
+	exec->put_Arguments(BStr(toWide(launchArguments).c_str()));
 
 	// ── Register (create or replace) the task ──────────────────────────────────
 	BStrVar sddl(L"");

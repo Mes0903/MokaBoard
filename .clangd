@@ -1,0 +1,21 @@
+CompileFlags:
+  Add:
+    - --std=c++23
+    - -Id:/document/MesRepo/Alarm/Alarm/include
+    - -isystem
+    - d:/document/MesRepo/Alarm/Alarm/3rdparty/imgui
+    - -isystem
+    - d:/document/MesRepo/Alarm/Alarm/3rdparty/imgui/backends
+    - -isystem
+    - d:/document/MesRepo/Alarm/Alarm/3rdparty/json/single_include
+    - -isystem
+    - C:/VulkanSDK/1.4.304.1/include
+    - -DWIN32
+    - -D_WIN32
+    - -DUNICODE
+    - -D_UNICODE
+    - -D_CRT_SECURE_NO_WARNINGS
+    - -DVK_USE_PLATFORM_WIN32_KHR
+
+Diagnostics:
+  UnusedIncludes: None

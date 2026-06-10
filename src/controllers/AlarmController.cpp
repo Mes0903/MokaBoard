@@ -1,12 +1,8 @@
 #include "controllers/AlarmController.h"
 #include "controllers/PersistenceService.h"
 #include "controllers/SchedulerService.h"
-#include <algorithm>
-#include <filesystem>
-#include <iomanip>
 #include <iostream>
 #include <random>
-#include <sstream>
 
 namespace alarm::controller {
 
